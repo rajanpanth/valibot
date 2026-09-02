@@ -425,7 +425,7 @@ describe('convertAction', () => {
     const jsonSchema = convertAction({}, v.examples(['foo', 'bar']), undefined);
     // `.map` only exists on the array member of `JsonSchemaType`. If
     // `examples` regresses to allowing a non-array value, this fails to
-    // compile under `vitest --typecheck`, not just at runtime.
+    // compile under `tsc --noEmit`, not just at runtime.
     expect(jsonSchema.examples?.map((example) => example)).toStrictEqual([
       'foo',
       'bar',
