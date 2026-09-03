@@ -176,7 +176,10 @@ type Action =
 
 /**
  * Merges an enum restriction into the JSON Schema. If the "enum" keyword is
- * already set, it is reduced to the values allowed by both restrictions.
+ * already set, it is reduced to the values allowed by both restrictions. When
+ * the restrictions have no value in common, nothing can validate, which is
+ * expressed as `not: {}` because an empty "enum" array is not a valid JSON
+ * Schema and validators refuse to compile it.
  *
  * @param jsonSchema The JSON Schema object.
  * @param values The allowed values.
@@ -186,9 +189,15 @@ function mergeEnumRestriction(
   values: (boolean | number | string)[]
 ): void {
   if (jsonSchema.enum) {
-    jsonSchema.enum = jsonSchema.enum.filter((option) =>
+    const allowed = jsonSchema.enum.filter((option) =>
       values.includes(option as boolean | number | string)
     );
+    if (allowed.length === 0) {
+      delete jsonSchema.enum;
+      mergeNotRestriction(jsonSchema, {});
+      return;
+    }
+    jsonSchema.enum = allowed;
   } else {
     jsonSchema.enum = values;
   }

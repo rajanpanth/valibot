@@ -1590,6 +1590,22 @@ describe('convertAction', () => {
     });
   });
 
+  test('should express an empty values intersection as an impossible schema', () => {
+    // An empty "enum" array is not a valid JSON Schema and validators refuse
+    // to compile it, so a restriction that nothing can satisfy is expressed
+    // with "not" instead.
+    expect(
+      convertAction(
+        { type: 'number', enum: [1, 2] },
+        v.values<v.ValueInput, [3, 4]>([3, 4]),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      not: {},
+    });
+  });
+
   test('should throw error for unsupported values action', () => {
     const error =
       'A requirement of the "values" action is not JSON compatible.';
