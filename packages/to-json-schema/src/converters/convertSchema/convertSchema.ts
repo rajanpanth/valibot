@@ -4,7 +4,7 @@ import type {
   ConversionContext,
   JsonSchema,
 } from '../../types/index.ts';
-import { addError, handleError } from '../../utils/index.ts';
+import { addError, handleError, isJsonConstValue } from '../../utils/index.ts';
 import { convertAction } from '../convertAction/index.ts';
 
 /**
@@ -533,11 +533,7 @@ export function convertSchema(
     }
 
     case 'literal': {
-      if (
-        typeof valibotSchema.literal !== 'boolean' &&
-        typeof valibotSchema.literal !== 'number' &&
-        typeof valibotSchema.literal !== 'string'
-      ) {
+      if (!isJsonConstValue(valibotSchema.literal)) {
         errors = addError(
           errors,
           'The value of the "literal" schema is not JSON compatible.'
@@ -555,6 +551,17 @@ export function convertSchema(
     }
 
     case 'enum': {
+      const hasInvalidOption = valibotSchema.options.some(
+        (option) =>
+          typeof option !== 'string' &&
+          (typeof option !== 'number' || !Number.isFinite(option))
+      );
+      if (hasInvalidOption) {
+        errors = addError(
+          errors,
+          'An option of the "enum" schema is not JSON compatible.'
+        );
+      }
       jsonSchema.enum = valibotSchema.options;
       if (valibotSchema.options.every((option) => typeof option === 'string')) {
         jsonSchema.type = 'string';
@@ -562,7 +569,7 @@ export function convertSchema(
         valibotSchema.options.every((option) => typeof option === 'number')
       ) {
         jsonSchema.type = 'number';
-      } else if (config?.target !== 'openapi-3.0') {
+      } else if (!hasInvalidOption && config?.target !== 'openapi-3.0') {
         // Hint: OpenAPI 3.0 does not support multi-type arrays.
         jsonSchema.type = ['string', 'number'];
       }
@@ -571,7 +578,9 @@ export function convertSchema(
 
     case 'picklist': {
       const hasInvalidOption = valibotSchema.options.some(
-        (option) => typeof option !== 'number' && typeof option !== 'string'
+        (option) =>
+          typeof option !== 'string' &&
+          (typeof option !== 'number' || !Number.isFinite(option))
       );
       if (hasInvalidOption) {
         errors = addError(

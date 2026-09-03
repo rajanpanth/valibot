@@ -1090,6 +1090,19 @@ describe('convertSchema', () => {
       );
     });
 
+    test('should throw error for non-finite literal schema', () => {
+      const error = 'The value of the "literal" schema is not JSON compatible.';
+      expect(() =>
+        convertSchema({}, v.literal(Infinity), undefined, createContext())
+      ).toThrowError(error);
+      expect(() =>
+        convertSchema({}, v.literal(-Infinity), undefined, createContext())
+      ).toThrowError(error);
+      expect(() =>
+        convertSchema({}, v.literal(NaN), undefined, createContext())
+      ).toThrowError(error);
+    });
+
     test('should convert enum schema', () => {
       enum TestEnum {
         KEY1,
@@ -1199,6 +1212,23 @@ describe('convertSchema', () => {
       });
     });
 
+    test('should throw error for non-finite enum option', () => {
+      const error = 'An option of the "enum" schema is not JSON compatible.';
+      expect(() =>
+        convertSchema(
+          {},
+          // @ts-expect-error
+          v.enum({ KEY1: Infinity }),
+          undefined,
+          createContext()
+        )
+      ).toThrowError(error);
+      expect(() =>
+        // @ts-expect-error
+        convertSchema({}, v.enum({ KEY1: NaN }), undefined, createContext())
+      ).toThrowError(error);
+    });
+
     test('should convert supported picklist schema', () => {
       expect(
         convertSchema(
@@ -1293,6 +1323,17 @@ describe('convertSchema', () => {
       expect(console.warn).toHaveBeenLastCalledWith(
         'An option of the "picklist" schema is not JSON compatible.'
       );
+    });
+
+    test('should throw error for non-finite picklist option', () => {
+      const error =
+        'An option of the "picklist" schema is not JSON compatible.';
+      expect(() =>
+        convertSchema({}, v.picklist([1, Infinity]), undefined, createContext())
+      ).toThrowError(error);
+      expect(() =>
+        convertSchema({}, v.picklist([NaN]), undefined, createContext())
+      ).toThrowError(error);
     });
 
     test('should convert union schema', () => {
