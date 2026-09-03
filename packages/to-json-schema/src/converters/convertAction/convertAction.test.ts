@@ -1343,6 +1343,179 @@ describe('convertAction', () => {
     });
   });
 
+  test('should keep stricter lower bound for min value action', () => {
+    expect(
+      convertAction(
+        { type: 'number', minimum: 5 },
+        v.minValue<v.ValueInput, 3>(3),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      minimum: 5,
+    });
+    expect(
+      convertAction(
+        { type: 'number', minimum: 3 },
+        v.minValue<v.ValueInput, 5>(5),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      minimum: 5,
+    });
+  });
+
+  test('should keep stricter upper bound for max value action', () => {
+    expect(
+      convertAction(
+        { type: 'number', maximum: 3 },
+        v.maxValue<v.ValueInput, 5>(5),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      maximum: 3,
+    });
+  });
+
+  test('should keep stricter lower bound for gt value action', () => {
+    expect(
+      convertAction(
+        { type: 'number', exclusiveMinimum: 5 },
+        v.gtValue<v.ValueInput, 3>(3),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      exclusiveMinimum: 5,
+    });
+  });
+
+  test('should keep stricter upper bound for lt value action', () => {
+    expect(
+      convertAction(
+        { type: 'number', exclusiveMaximum: 3 },
+        v.ltValue<v.ValueInput, 5>(5),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      exclusiveMaximum: 3,
+    });
+  });
+
+  test('should keep stricter bounds for length actions on strings', () => {
+    expect(
+      convertAction(
+        { type: 'string', minLength: 3 },
+        v.nonEmpty<v.LengthInput>(),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'string',
+      minLength: 3,
+    });
+    expect(
+      convertAction(
+        { type: 'string', minLength: 5 },
+        v.minLength<v.LengthInput, 3>(3),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'string',
+      minLength: 5,
+    });
+    expect(
+      convertAction(
+        { type: 'string', maxLength: 3 },
+        v.maxLength<v.LengthInput, 5>(5),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'string',
+      maxLength: 3,
+    });
+    expect(
+      convertAction(
+        { type: 'string', minLength: 3, maxLength: 3 },
+        v.length<v.LengthInput, 2>(2),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'string',
+      minLength: 3,
+      maxLength: 2,
+    });
+  });
+
+  test('should keep stricter bounds for length actions on arrays', () => {
+    expect(
+      convertAction(
+        { type: 'array', minItems: 3 },
+        v.nonEmpty<v.LengthInput>(),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'array',
+      minItems: 3,
+    });
+    expect(
+      convertAction(
+        { type: 'array', minItems: 5 },
+        v.minLength<v.LengthInput, 3>(3),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'array',
+      minItems: 5,
+    });
+    expect(
+      convertAction(
+        { type: 'array', maxItems: 3 },
+        v.maxLength<v.LengthInput, 5>(5),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'array',
+      maxItems: 3,
+    });
+  });
+
+  test('should keep stricter bounds for entries actions', () => {
+    expect(
+      convertAction(
+        { type: 'object', minProperties: 2 },
+        v.minEntries<v.EntriesInput, 1>(1),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'object',
+      minProperties: 2,
+    });
+    expect(
+      convertAction(
+        { type: 'object', maxProperties: 1 },
+        v.maxEntries<v.EntriesInput, 2>(2),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'object',
+      maxProperties: 1,
+    });
+    expect(
+      convertAction(
+        { type: 'object', minProperties: 3, maxProperties: 1 },
+        v.entries<v.EntriesInput, 2>(2),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'object',
+      minProperties: 3,
+      maxProperties: 1,
+    });
+  });
+
   test('should convert starts with action', () => {
     expect(
       convertAction(
