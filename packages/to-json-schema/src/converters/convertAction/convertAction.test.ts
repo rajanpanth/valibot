@@ -1366,6 +1366,29 @@ describe('convertAction', () => {
     });
   });
 
+  test('should replace a non-finite bound instead of keeping it', () => {
+    expect(
+      convertAction(
+        { type: 'number', minimum: NaN },
+        v.minValue<v.ValueInput, 3>(3),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      minimum: 3,
+    });
+    expect(
+      convertAction(
+        { type: 'number', maximum: NaN },
+        v.maxValue<v.ValueInput, 3>(3),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      maximum: 3,
+    });
+  });
+
   test('should keep stricter upper bound for max value action', () => {
     expect(
       convertAction(

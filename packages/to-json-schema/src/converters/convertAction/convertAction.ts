@@ -193,7 +193,9 @@ function mergeLowerBound(
   value: number
 ): void {
   const current = jsonSchema[keyword];
-  if (typeof current !== 'number' || value > current) {
+  // A non-finite bound cannot be represented in JSON, so it is replaced
+  // rather than compared against.
+  if (!Number.isFinite(current) || value > (current as number)) {
     jsonSchema[keyword] = value;
   }
 }
@@ -217,7 +219,9 @@ function mergeUpperBound(
   value: number
 ): void {
   const current = jsonSchema[keyword];
-  if (typeof current !== 'number' || value < current) {
+  // A non-finite bound cannot be represented in JSON, so it is replaced
+  // rather than compared against.
+  if (!Number.isFinite(current) || value < (current as number)) {
     jsonSchema[keyword] = value;
   }
 }
