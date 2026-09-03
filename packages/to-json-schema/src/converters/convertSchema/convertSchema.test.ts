@@ -1325,6 +1325,24 @@ describe('convertSchema', () => {
       );
     });
 
+    test('should reject a boolean picklist option', () => {
+      // Valibot's PicklistOptions type does not include booleans, and the
+      // type inference below only emits string and number, so accepting a
+      // boolean here would produce a schema whose type excludes its own
+      // enum value.
+      expect(() =>
+        convertSchema(
+          {},
+          // @ts-expect-error
+          v.picklist([true, 'a']),
+          undefined,
+          createContext()
+        )
+      ).toThrowError(
+        'An option of the "picklist" schema is not JSON compatible.'
+      );
+    });
+
     test('should throw error for non-finite picklist option', () => {
       const error =
         'An option of the "picklist" schema is not JSON compatible.';

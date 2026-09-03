@@ -4,12 +4,7 @@ import type {
   ConversionContext,
   JsonSchema,
 } from '../../types/index.ts';
-import {
-  addError,
-  handleError,
-  isJsonConstValue,
-  isJsonEnumValues,
-} from '../../utils/index.ts';
+import { addError, handleError, isJsonConstValue } from '../../utils/index.ts';
 import { convertAction } from '../convertAction/index.ts';
 
 /**
@@ -114,6 +109,22 @@ type Pipe = readonly (Schema | v.PipeAction<any, any, v.BaseIssue<unknown>>)[];
  * Schema or pipe type.
  */
 type SchemaOrPipe = Schema | v.SchemaWithPipe<readonly [Schema, ...Pipe]>;
+
+/**
+ * Whether a value is a valid option of an "enum" or "picklist" schema in
+ * JSON. Valibot itself only allows strings, numbers and bigints here, and a
+ * non-finite number or a bigint cannot be represented in JSON.
+ *
+ * @param option The option to check.
+ *
+ * @returns Whether the option is valid.
+ */
+function isValidEnumOption(option: unknown): option is number | string {
+  return (
+    typeof option === 'string' ||
+    (typeof option === 'number' && Number.isFinite(option))
+  );
+}
 
 /**
  * Flattens a Valibot pipe by recursively expanding nested pipes.
@@ -556,7 +567,7 @@ export function convertSchema(
     }
 
     case 'enum': {
-      const hasInvalidOptions = !isJsonEnumValues(valibotSchema.options);
+      const hasInvalidOptions = !valibotSchema.options.every(isValidEnumOption);
       if (hasInvalidOptions) {
         errors = addError(
           errors,
@@ -578,7 +589,7 @@ export function convertSchema(
     }
 
     case 'picklist': {
-      const hasInvalidOptions = !isJsonEnumValues(valibotSchema.options);
+      const hasInvalidOptions = !valibotSchema.options.every(isValidEnumOption);
       if (hasInvalidOptions) {
         errors = addError(
           errors,
