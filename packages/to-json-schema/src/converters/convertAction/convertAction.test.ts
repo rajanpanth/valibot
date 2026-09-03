@@ -1198,6 +1198,29 @@ describe('convertAction', () => {
     });
   });
 
+  test('should merge multiple not restrictions', () => {
+    expect(
+      convertAction(
+        { type: 'number', not: { const: 0 } },
+        v.notValue<v.ValueInput, 1>(1),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      not: { anyOf: [{ const: 0 }, { const: 1 }] },
+    });
+    expect(
+      convertAction(
+        { type: 'number', not: { const: 0 } },
+        v.notValues<v.ValueInput, [1, 2]>([1, 2]),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      not: { anyOf: [{ const: 0 }, { enum: [1, 2] }] },
+    });
+  });
+
   test('should throw error for unsupported not value action', () => {
     const error =
       'The requirement of the "not_value" action is not JSON compatible.';
@@ -1432,11 +1455,49 @@ describe('convertAction', () => {
     });
   });
 
+  test('should keep identical const restriction for value action', () => {
+    expect(
+      convertAction(
+        { type: 'string', const: 'foo' },
+        v.value<v.ValueInput, 'foo'>('foo'),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'string',
+      const: 'foo',
+    });
+  });
+
+  test('should throw error for value action with different const restriction', () => {
+    expect(() =>
+      convertAction(
+        { type: 'string', const: 'foo' },
+        v.value<v.ValueInput, 'bar'>('bar'),
+        undefined
+      )
+    ).toThrowError(
+      'The "value" action is not supported in combination with a different "const" restriction.'
+    );
+  });
+
   test('should convert value action for openapi-3.0', () => {
     expect(
       convertAction({ type: 'string' }, v.value<v.ValueInput, 'foo'>('foo'), {
         target: 'openapi-3.0',
       })
+    ).toStrictEqual({
+      type: 'string',
+      enum: ['foo'],
+    });
+  });
+
+  test('should reduce existing enum restriction for value action with openapi-3.0', () => {
+    expect(
+      convertAction(
+        { type: 'string', enum: ['foo', 'bar'] },
+        v.value<v.ValueInput, 'foo'>('foo'),
+        { target: 'openapi-3.0' }
+      )
     ).toStrictEqual({
       type: 'string',
       enum: ['foo'],
@@ -1513,6 +1574,19 @@ describe('convertAction', () => {
     ).toStrictEqual({
       type: 'boolean',
       enum: [true, false],
+    });
+  });
+
+  test('should reduce existing enum restriction for values action', () => {
+    expect(
+      convertAction(
+        { type: 'number', enum: [1, 2] },
+        v.values<v.ValueInput, [2, 3]>([2, 3]),
+        undefined
+      )
+    ).toStrictEqual({
+      type: 'number',
+      enum: [2],
     });
   });
 

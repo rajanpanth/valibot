@@ -257,4 +257,26 @@ describe('toJsonSchema', () => {
       );
     });
   });
+
+  describe('should merge overlapping value restrictions', () => {
+    test('for repeated values actions', () => {
+      expect(
+        toJsonSchema(v.pipe(v.number(), v.values([1, 2]), v.values([2, 3])))
+      ).toStrictEqual({
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        type: 'number',
+        enum: [2],
+      });
+    });
+
+    test('for repeated not value actions', () => {
+      expect(
+        toJsonSchema(v.pipe(v.number(), v.notValue(1), v.notValue(2)))
+      ).toStrictEqual({
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        type: 'number',
+        not: { anyOf: [{ const: 1 }, { const: 2 }] },
+      });
+    });
+  });
 });

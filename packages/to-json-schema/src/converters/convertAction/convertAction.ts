@@ -175,6 +175,46 @@ type Action =
     >;
 
 /**
+ * Merges an enum restriction into the JSON Schema. If the "enum" keyword is
+ * already set, it is reduced to the values allowed by both restrictions.
+ *
+ * @param jsonSchema The JSON Schema object.
+ * @param values The allowed values.
+ */
+function mergeEnumRestriction(
+  jsonSchema: JsonSchema,
+  values: (boolean | number | string)[]
+): void {
+  if (jsonSchema.enum) {
+    jsonSchema.enum = jsonSchema.enum.filter((option) =>
+      values.includes(option as boolean | number | string)
+    );
+  } else {
+    jsonSchema.enum = values;
+  }
+}
+
+/**
+ * Merges a "not" restriction into the JSON Schema. If the "not" keyword is
+ * already set, both restrictions are combined with "anyOf", because negating
+ * a union of restrictions rejects exactly the values that each individual
+ * restriction rejects.
+ *
+ * @param jsonSchema The JSON Schema object.
+ * @param notSchema The "not" restriction.
+ */
+function mergeNotRestriction(
+  jsonSchema: JsonSchema,
+  notSchema: JsonSchema
+): void {
+  if (jsonSchema.not !== undefined) {
+    jsonSchema.not = { anyOf: [jsonSchema.not, notSchema] };
+  } else {
+    jsonSchema.not = notSchema;
+  }
+}
+
+/**
  * Converts any supported Valibot action to the JSON Schema format.
  *
  * @param jsonSchema The JSON Schema object.
@@ -526,11 +566,12 @@ export function convertAction(
         );
         break;
       }
-      if (config?.target === 'openapi-3.0') {
-        jsonSchema.not = { enum: [valibotAction.requirement] };
-      } else {
-        jsonSchema.not = { const: valibotAction.requirement };
-      }
+      mergeNotRestriction(
+        jsonSchema,
+        config?.target === 'openapi-3.0'
+          ? { enum: [valibotAction.requirement] }
+          : { const: valibotAction.requirement }
+      );
       break;
     }
 
@@ -542,7 +583,7 @@ export function convertAction(
         );
         break;
       }
-      jsonSchema.not = { enum: valibotAction.requirement };
+      mergeNotRestriction(jsonSchema, { enum: valibotAction.requirement });
       break;
     }
 
@@ -622,7 +663,15 @@ export function convertAction(
       if (config?.target === 'openapi-3.0') {
         // Hint: OpenAPI 3.0 does not support const. That's why we use an
         // enum instead.
-        jsonSchema.enum = [valibotAction.requirement];
+        mergeEnumRestriction(jsonSchema, [valibotAction.requirement]);
+      } else if (
+        'const' in jsonSchema &&
+        jsonSchema.const !== valibotAction.requirement
+      ) {
+        errors = addError(
+          errors,
+          `The "${valibotAction.type}" action is not supported in combination with a different "const" restriction.`
+        );
       } else {
         jsonSchema.const = valibotAction.requirement;
       }
@@ -637,7 +686,7 @@ export function convertAction(
         );
         break;
       }
-      jsonSchema.enum = valibotAction.requirement;
+      mergeEnumRestriction(jsonSchema, valibotAction.requirement);
       break;
     }
 
